@@ -5,17 +5,38 @@ function App() {
   const difficulty = 3;
   const grid = renderGridByDifficulty(difficulty);
   const [isClicked, setIsClicked] = useState(grid);
-  console.log(`isClicked`, isClicked);
-  console.log(`typeod(isClicked)`, typeof (isClicked));
+  const [startGame, setStartGame] = useState(false);
+  const [answer, setAnswer] = useState([]);
+  const [selectedAnswer, setSelectedAnswer] = useState([]);
+  const [message, setMessage] = useState('')
 
-  // useEffect(() => {
-  //   setIsClicked(grid);
-  //   console.log(`isClicked in the useEffect`, isClicked);
-  // },[])
+  // const isCorrect = answer.slice().sort().every(function (value, index) {
+  //   return value === selectedAnswerSorted[index];
+  // });
 
-  function highlightCells() {
+  useEffect(() => {
+    function flashCells() {
+      return answer.map((num) => {
+        return handleChange(num);
+      });
+    }
 
-  }
+    flashCells();
+    setTimeout(flashCells, 2000);
+  }, [answer])
+
+  useEffect(() => {
+    if(difficulty === selectedAnswer.length) {
+      const selectedAnswerSorted = selectedAnswer.length > 0 && selectedAnswer.slice().sort();
+      const isCorrect = answer.slice().sort().every(function (value, index) {
+        return value === selectedAnswerSorted[index];
+      });
+      isCorrect ? setMessage('You win!') : setMessage('Sorry, try again')
+      setAnswer([]);
+    }
+
+  }, [answer, selectedAnswer])
+
 
   function renderGridByDifficulty(difficulty) {
     let grid = [];
@@ -31,43 +52,78 @@ function App() {
     return grid;
   }
 
-  function handleClick() {
-    console.log('clicked')
-    // const randomNumOne = Math.random()
+
+  let answerArr = [];
+  function handleGenerateRandomNumbers(difficulty) {
+    const randomNum = Math.floor(Math.random() * (difficulty * difficulty));
+
+    if (answerArr.length < difficulty) {
+      if (answerArr.includes(randomNum)) {
+        handleGenerateRandomNumbers(difficulty);
+      } else {
+        answerArr.push(randomNum);
+        handleGenerateRandomNumbers(difficulty);
+      }
+    }
+
+    console.log(`answerArr`, answerArr);
+    setAnswer(answerArr);
+
+  }
+
+  function handleStartClick() {
+    setStartGame(true);
+    setAnswer([]);
+    setSelectedAnswer([]);
+    handleGenerateRandomNumbers(difficulty);
+
   }
 
   function handleChange(name) {
     setIsClicked((prevState) => {
       return prevState.map((item) => {
-        console.log(`item`, item);
-        console.log(`name`, name);
-        if(item.id === name) {
+        if (item.id === name) {
           return {
             ...item,
-            isClicked: !item.isClicked
-          }
+            isClicked: !item.isClicked,
+          };
         }
         return item;
-      })
+      });
     });
   }
 
-  function renderCells() {
-    console.log(`isClicked rendercells`, isClicked);
+  function selectAnswer(name) {
+    handleChange(name);
+    setSelectedAnswer(selectedAnswer.concat(name));
+  }
 
+
+  function renderCells() {
     return isClicked.map((cell) => {
+      let cellColor;
+
+      if (startGame) {
+        if (cell.isClicked) {
+          cellColor = 'red';
+        } else {
+          cellColor = 'blue';
+        }
+      } else {
+        cellColor = 'gray';
+      }
+
+
       return (
         <div
           key={cell.id}
           id={cell.id}
           style={{
             height: 50, flexGrow: 1,
-            width: '33%', backgroundColor: cell.isClicked ? 'green' : 'orange', border: 'solid 1px black',
+            width: '33%', backgroundColor: cellColor, border: 'solid 1px black',
           }}
-          onClick={() => handleChange(cell.id)}
-        >
-
-        </div>
+          onClick={() => selectAnswer(cell.id)}
+        />
       );
     });
   }
@@ -76,11 +132,14 @@ function App() {
   return (
     <div className="App">
       <h1>Memory Game</h1>
-      <button onClick={handleClick}>Start</button>
+      <button onClick={handleStartClick}>Start</button>
 
       <div style={{ display: 'flex', flexWrap: 'wrap' }}>
         {renderCells()}
       </div>
+
+      {(startGame) && (<h1>{message}</h1>)}
+      {/*{(startGame && randomNumbers.length === answers.length && !isCorrect) && (<h1>Sorry, try again!</h1>)}*/}
 
     </div>
   );
